@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YoCele! — AI Video Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,500;0,700;0,900;1,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0c;
+    --panel: #141317;
+    --panel-2: #1c1a20;
+    --line: #2a272f;
+    --gold: #d4af37;
+    --gold-soft: #e8cf7d;
+    --flash: #ff2e88;
+    --ivory: #f5f1e8;
+    --muted: #8b8894;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ivory);font-family:'Manrope',sans-serif;min-height:100vh;}
+
+  ::selection{background:var(--gold);color:#0a0a0c;}
+
+  /* ---------- Flash bulb overlay ---------- */
+  #flash{
+    position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999;
+    transition:opacity .08s ease-out;
+  }
+  #flash.pop{opacity:.92;transition:opacity 0s;}
+
+  /* ---------- Header ---------- */
+  header{
+    padding:28px 40px 20px;
+    display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  .wordmark{
+    font-family:'Bodoni Moda',serif;font-weight:900;font-style:italic;
+    font-size:34px;letter-spacing:.5px;
+    background:linear-gradient(100deg,var(--gold-soft),var(--gold) 40%,var(--flash) 95%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .wordmark span{-webkit-text-fill-color:var(--flash);color:var(--flash);}
+  .subhead{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin-top:4px;
+  }
+  .tagline{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
+    text-align:right;line-height:1.6;
+  }
+  .tagline b{color:var(--gold-soft);font-weight:500;}
+
+  /* ---------- Layout ---------- */
+  main{
+    display:grid;grid-template-columns:1.1fr 1.4fr;gap:1px;background:var(--line);
+    min-height:calc(100vh - 96px);
+  }
+  @media(max-width:880px){ main{grid-template-columns:1fr;} }
+  section{background:var(--bg);padding:36px 40px;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:'';width:16px;height:1px;background:var(--gold);display:inline-block;}
+
+  h2{
+    font-family:'Bodoni Moda',serif;font-weight:700;font-style:italic;font-size:26px;margin:0 0 22px;
+  }
+
+  /* ---------- Left: input panel ---------- */
+  .dropzone{
+    border:1px dashed var(--line);border-radius:2px;padding:0;
+    aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;cursor:pointer;background:var(--panel);
+    transition:border-color .2s;
+  }
+  .dropzone:hover{border-color:var(--gold);}
+  .dropzone.has-image{border-style:solid;border-color:var(--gold);}
+  .dropzone img{width:100%;height:100%;object-fit:cover;}
+  .dropzone-empty{
+    text-align:center;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;
+    padding:20px;
+  }
+  .dropzone-empty .icon{font-size:30px;display:block;margin-bottom:10px;opacity:.6;}
+  .dropzone input[type=file]{display:none;}
+  .swap-tag{
+    position:absolute;top:10px;right:10px;background:rgba(10,10,12,.75);
+    border:1px solid var(--gold);color:var(--gold-soft);font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;
+  }
+
+  label.field-label{
+    display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin:24px 0 8px;
+  }
+  textarea{
+    width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ivory);
+    font-family:'Manrope',sans-serif;font-size:14px;padding:12px 14px;border-radius:2px;
+    resize:vertical;min-height:64px;line-height:1.5;
+  }
+  textarea:focus, .dropzone:focus-visible, .preset-card:focus-visible, button:focus-visible{
+    outline:2px solid var(--flash);outline-offset:2px;
+  }
+  textarea::placeholder{color:#57545e;}
+
+  .generate-btn{
+    width:100%;margin-top:26px;padding:16px 20px;border:none;border-radius:2px;
+    background:linear-gradient(95deg,var(--gold-soft),var(--gold));
+    color:#12100a;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;
+    letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .generate-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px -6px rgba(212,175,55,.5);}
+  .generate-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .generate-btn .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--flash);
+  }
+  .generate-btn.working .dot{animation:blink 1s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.15;}}
+
+  /* ---------- Right: preset panel ---------- */
+  .preset-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:2px;
+    padding:20px 22px;margin-bottom:14px;cursor:pointer;display:flex;gap:16px;align-items:flex-start;
+    transition:border-color .15s, background .15s;
+  }
+  .preset-card:hover{border-color:#4a4552;}
+  .preset-card.active{border-color:var(--gold);background:var(--panel-2);}
+  .preset-card.active .preset-code{color:var(--gold);}
+  .preset-icon{
+    font-size:26px;line-height:1;flex-shrink:0;width:40px;height:40px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg);border:1px solid var(--line);border-radius:2px;
+  }
+  .preset-code{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;display:block;
+  }
+  .preset-name{font-family:'Bodoni Moda',serif;font-weight:700;font-size:19px;margin:0 0 6px;}
+  .preset-desc{font-size:13px;color:var(--muted);line-height:1.5;margin:0;}
+  .preset-radio{
+    width:16px;height:16px;border-radius:50%;border:1.5px solid var(--muted);flex-shrink:0;margin-top:4px;
+    position:relative;
+  }
+  .preset-card.active .preset-radio{border-color:var(--gold);}
+  .preset-card.active .preset-radio::after{
+    content:'';position:absolute;inset:3px;border-radius:50%;background:var(--gold);
+  }
+
+  /* ---------- Output ---------- */
+  #output{margin-top:28px;}
+  .status-line{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
+    display:flex;align-items:center;gap:8px;margin-bottom:14px;
+  }
+  .result-card{
+    border:1px solid var(--line);background:var(--panel);border-radius:2px;padding:18px 20px;
+  }
+  .result-card video{width:100%;border-radius:2px;display:block;margin-top:10px;background:#000;}
+  .result-card .result-label{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.1em;
+    text-transform:uppercase;margin-bottom:8px;display:block;
+  }
+  .result-card p{font-size:13.5px;line-height:1.6;color:#d8d4cc;margin:0 0 4px;}
+  .error-card{border-color:var(--flash);}
+  .error-card .result-label{color:var(--flash);}
+  .link-btn{
+    display:inline-block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--gold-soft);text-decoration:none;border-bottom:1px solid var(--gold-soft);
+  }
+
+  footer{
+    padding:16px 40px;border-top:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4d4a55;
+    letter-spacing:.05em;text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<header>
+  <div>
+    <div class="wordmark">YoCele<span>!</span></div>
+    <div class="subhead">You Must Be Cele — AI Video Studio</div>
+  </div>
+  <div class="tagline">Flex it. <b>Sell it.</b><br>One photo → one flex-worthy clip.</div>
+</header>
+
+<main>
+  <section>
+    <div class="eyebrow">01 — The Shot</div>
+    <h2>Drop your photo</h2>
+
+    <label class="dropzone" id="dropzone" tabindex="0">
+      <div class="dropzone-empty" id="dropzoneEmpty">
+        <span class="icon">📸</span>
+        Click or drop a photo<br>food · house · car
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </label>
+
+    <label class="field-label" for="notes">Add a flex detail (optional)</label>
+    <textarea id="notes" placeholder="e.g. 'It's a 1962 rooftop villa' or 'wagyu, medium rare' or 'twin turbo, matte black'"></textarea>
+
+    <button class="generate-btn" id="generateBtn" disabled>
+      <span class="dot"></span>
+      Generate the flex
+    </button>
+
+    <div id="output"></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">02 — The Preset</div>
+    <h2>Pick your cele energy</h2>
+
+    <div class="preset-card" data-preset="michelin" tabindex="0">
+      <div class="preset-icon">🍽️</div>
+      <div style="flex:1;">
+        <span class="preset-code">Lifestyle · Bragging</span>
+        <p class="preset-name">Yo Michelin Star</p>
+        <p class="preset-desc">Your plate, reborn as a cinematic tasting-menu review — slow pans, steam, a single review line dropped like a mic. Built for the flex-post.</p>
+      </div>
+      <div class="preset-radio"></div>
+    </div>
+
+    <div class="preset-card" data-preset="estate" tabindex="0">
+      <div class="preset-icon">🏛️</div>
+      <div style="flex:1;">
+        <span class="preset-code">Business · Selling</span>
+        <p class="preset-name">Yo Cele Estate</p>
+        <p class="preset-desc">That listing photo becomes a billionaire-mansion promo — drone-style glides, golden-hour grade, real-estate-cele voiceover energy. Built to sell.</p>
+      </div>
+      <div class="preset-radio"></div>
+    </div>
+
+    <div class="preset-card" data-preset="turbo" tabindex="0">
+      <div class="preset-icon">🏎️</div>
+      <div style="flex:1;">
+        <span class="preset-code">Business · Selling</span>
+        <p class="preset-name">Yo Turbo Star</p>
+        <p class="preset-desc">Your car photo turns into a premium supercar commercial — low angles, engine flare, showroom lighting. Built to move units.</p>
+      </div>
+      <div class="preset-radio"></div>
+    </div>
+  </section>
+</main>
+
+<footer>YOCELE! HACKATHON BUILD · POWERED BY CLAUDE + HIGGSFIELD MCP</footer>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const dropzoneEmpty = document.getElementById('dropzoneEmpty');
+  const fileInput = document.getElementById('fileInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const notes = document.getElementById('notes');
+  const output = document.getElementById('output');
+  const flash = document.getElementById('flash');
+  const presetCards = Array.from(document.querySelectorAll('.preset-card'));
+
+  let imageBase64 = null;   // raw base64, no data: prefix
+  let imageMediaType = null;
+  let selectedPreset = null;
+
+  // ---------- Preset definitions ----------
+  const PRESETS = {
+    michelin: {
+      name: 'Yo Michelin Star',
+      subject: 'food photo',
+      prompt: `Take the attached food photo and use the Higgsfield MCP tools available to you to upscale it into an ultra-realistic 4K Michelin-starred restaurant commercial. Close-up shots, dramatic gourmet cinematic lighting, steam rising elegantly from the food, shot on an Arri Alexa camera, high-end food vlogger aesthetic. After calling the video generation tool, tell me what was generated and give me the video link or result.`
+    },
+    estate: {
+      name: 'Yo Cele Estate',
+      subject: 'property photo',
+      prompt: `Analyze the structure in the attached property photo. Use the Higgsfield MCP tools available to you to transform and expand the layout into a massive $10 Million luxury billionaire mansion in Beverly Hills. Include a pristine swimming pool, paparazzi camera flashes, cinematic slow-motion drone panning, high-end real estate promo style. After calling the video generation tool, tell me what was generated and give me the video link or result.`
+    },
+    turbo: {
+      name: 'Yo Turbo Star',
+      subject: 'car photo',
+      prompt: `Extract the vehicle from the attached car photo. Use the Higgsfield MCP tools available to you to superimpose it into a professional car commercial: generate a high-speed action shot drifting on a wet coastal highway at dusk, sharp neon reflections, cinematic motion blur, 4K resolution, aggressive and premium styling. After calling the video generation tool, tell me what was generated and give me the video link or result.`
+    }
+  };
+
+  function popFlash(){
+    flash.classList.add('pop');
+    setTimeout(()=> flash.classList.remove('pop'), 90);
+  }
+
+  function updateGenerateState(){
+    generateBtn.disabled = !(imageBase64 && selectedPreset);
+  }
+
+  // ---------- Image upload ----------
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+  dropzone.addEventListener('dragover', e => e.preventDefault());
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => {
+    if(e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file){
+    if(!file.type.startsWith('image/')) return;
+    imageMediaType = file.type;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      imageBase64 = dataUrl.split(',')[1];
+      dropzoneEmpty.style.display = 'none';
+      let img = dropzone.querySelector('img');
+      if(!img){
+        img = document.createElement('img');
+        dropzone.appendChild(img);
+        const tag = document.createElement('span');
+        tag.className = 'swap-tag';
+        tag.textContent = 'click to swap';
+        dropzone.appendChild(tag);
+      }
+      img.src = dataUrl;
+      dropzone.classList.add('has-image');
+      updateGenerateState();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---------- Preset selection ----------
+  presetCards.forEach(card => {
+    const select = () => {
+      presetCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      selectedPreset = card.dataset.preset;
+      updateGenerateState();
+    };
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') select(); });
+  });
+
+  // ---------- Generate ----------
+  generateBtn.addEventListener('click', async () => {
+    if(!imageBase64 || !selectedPreset) return;
+    popFlash();
+    generateBtn.disabled = true;
+    generateBtn.classList.add('working');
+    generateBtn.querySelector('.dot');
+    const originalLabel = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<span class="dot"></span> Rolling camera…';
+
+    const preset = PRESETS[selectedPreset];
+    const userNote = notes.value.trim();
+    const fullPrompt = preset.prompt + (userNote ? ` Extra detail from the user: "${userNote}".` : '');
+
+    output.innerHTML = `<div class="status-line"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--gold);"></span> Generating your ${preset.name} clip…</div>`;
+
+    try{
+    // Higgsfield Platform ပေါ်မှာ အခမဲ့ တိုက်ရိုက် run ဖို့အတွက် ပြင်ဆင်ထားသည့် ကုဒ်
+      if (typeof window.Higgsfield !== 'undefined') {
+        const response = await window.Higgsfield.generateVideo({
+          image: imageBase64,
+          prompt: fullPrompt,
+          mode: 'cinematic',
+          duration: 5
+        });
+        
+        if (response && response.videoUrl) {
+          output.innerHTML = `
+            <div class="result-card">
+              <span class="result-label">${preset.name} — COMPLETED</span>
+              <video controls src="${response.videoUrl}" autoplay loop></video>
+              <a class="link-btn" href="${response.videoUrl}" target="_blank">Open video ↗</a>
+            </div>`;
+        } else {
+          throw new Error("Failed to retrieve generated video URL from Higgsfield.");
+        }
+      } else {
+        throw new Error("Higgsfield App Environment not detected. Please run inside Higgsfield App.");
+      } 
+
+    } catch(err){
+      console.error('YoCele generation error:', err);
+      output.innerHTML = `
+        <div class="result-card error-card">
+          <span class="result-label">Cut. Something broke.</span>
+          <p>${escapeHtml(String(err.message || err))}</p>
+        </div>`;
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.classList.remove('working');
+      generateBtn.innerHTML = originalLabel;
+      updateGenerateState();
+    }
+  });
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function findVideoUrl(str){
+    if(!str) return null;
+    const match = str.match(/https?:\/\/[^\s"'<>]+\.(mp4|webm|mov)(\?[^\s"'<>]*)?/i);
+    return match ? match[0] : null;
+  }
+
+  function renderResult(data, preset){
+    if(!data || !Array.isArray(data.content)){
+      output.innerHTML = `
+        <div class="result-card error-card">
+          <span class="result-label">No usable response</span>
+          <p>${escapeHtml(JSON.stringify(data).slice(0, 400))}</p>
+        </div>`;
+      return;
+    }
+
+    const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text);
+    const toolResultBlocks = data.content.filter(b => b.type === 'mcp_tool_result');
+    const toolUseBlocks = data.content.filter(b => b.type === 'mcp_tool_use');
+
+    let toolResultText = '';
+    toolResultBlocks.forEach(b => {
+      if(Array.isArray(b.content)){
+        b.content.forEach(c => { if(c.text) toolResultText += c.text + '\n'; });
+      } else if(typeof b.content === 'string'){
+        toolResultText += b.content + '\n';
+      }
+    });
+
+    const combinedText = textBlocks.join('\n');
+    const videoUrl = findVideoUrl(toolResultText) || findVideoUrl(combinedText);
+
+    let html = `<div class="result-card">
+      <span class="result-label">${preset.name} — result</span>`;
+
+    if(videoUrl){
+      html += `<video controls src="${videoUrl}"></video>
+        <a class="link-btn" href="${videoUrl}" target="_blank" rel="noopener">Open video in new tab ↗</a>`;
+    } else if(toolUseBlocks.length === 0){
+      html += `<p>No video generation tool was called. Higgsfield MCP tools may not be connected — check that the connector is enabled.</p>`;
+    } else {
+      html += `<p>Job submitted to Higgsfield. Raw tool result:</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#a39fae;white-space:pre-wrap;">${escapeHtml(toolResultText.slice(0, 800) || 'No result text returned.')}</p>`;
+    }
+
+    if(combinedText){
+      html += `<p style="margin-top:12px;">${escapeHtml(combinedText)}</p>`;
+    }
+
+    html += `</div>`;
+    output.innerHTML = html;
+  }
+
+})();
+</script>
+</body>
+</html>
