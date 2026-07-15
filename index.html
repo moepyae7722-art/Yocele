@@ -363,8 +363,9 @@
     output.innerHTML = `<div class="status-line"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--gold);"></span> Generating your ${preset.name} clip…</div>`;
 
     try{
-    // Higgsfield Platform ပေါ်မှာ အခမဲ့ တိုက်ရိုက် run ဖို့အတွက် ပြင်ဆင်ထားသည့် ကုဒ်
+// Higgsfield Environment ရှိမရှိ စစ်ဆေးခြင်း
       if (typeof window.Higgsfield !== 'undefined') {
+        // Higgsfield App ထဲမှာ တကယ့်တကယ် Run နေပါက
         const response = await window.Higgsfield.generateVideo({
           image: imageBase64,
           prompt: fullPrompt,
@@ -380,12 +381,24 @@
               <a class="link-btn" href="${response.videoUrl}" target="_blank">Open video ↗</a>
             </div>`;
         } else {
-          throw new Error("Failed to retrieve generated video URL from Higgsfield.");
+          throw new Error("Failed to retrieve video from Higgsfield.");
         }
       } else {
-        throw new Error("Higgsfield App Environment not detected. Please run inside Higgsfield App.");
-      } 
+        // 👉 Higgsfield ပြင်ပ (ဥပမာ Browser/GitHub) တွင် စမ်းသပ်နေပါက Demo အနေဖြင့် ပြသပေးမည်
+        output.innerHTML = `<div class="status-line">Higgsfield Engine Simulating... Please wait...</div>`;
+        
+        await new Promise(resolve => setTimeout(resolve, 3000)); // ၃ စက္ကန့် စောင့်ခိုင်းခြင်း
+        
+        // Demo ဗီဒီယိုတစ်ခုကို ချပြပေးခြင်း (Error မတက်စေရန်)
+        output.innerHTML = `
+          <div class="result-card">
+            <span class="result-label">${preset.name} — [DEMO MODE]</span>
+            <video controls src="https://assets.mixkit.co/videos/preview/mixkit-gourmet-dish-being-presented-with-sauce-34282-large.mp4" autoplay loop style="width: 100%; border-radius: 8px;"></video>
+            <p style="font-size: 12px; color: #888; margin-top: 8px;">*Running in Demo Mode on Web. Real generation occurs inside Higgsfield App.</p>
+          </div>`;
+      }
 
+      
     } catch(err){
       console.error('YoCele generation error:', err);
       output.innerHTML = `
